@@ -1,0 +1,3 @@
+[submodule "thread"]
+	path = thread
+	url = git@github.com:elsamuko/thread.git
