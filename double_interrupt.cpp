@@ -3,11 +3,13 @@
 
 #include <iostream>
 #include <thread>
+#include <fstream>
 
 #include "boost/thread.hpp"
 #include "boost/thread/thread_guard.hpp"
 #include "boost/thread/exceptions.hpp"
 #include "boost/thread/scoped_thread.hpp"
+#include "boost/thread/thread_functors.hpp"
 
 #define LOG( A ) std::cout << A << std::endl;
 
@@ -16,7 +18,7 @@ void work() {
 
     for(int i = 0; i < 1E7; ++i) { sum += 1; }
 
-    LOG("work: " << sum);
+    std::ofstream( "result.txt" ) << sum;
 }
 
 // helper struct to interrupt a boost::thread within a boost::thread
@@ -24,40 +26,54 @@ struct non_interruptable_interrupt_and_join_if_joinable {
     template <class Thread>
     void operator()(Thread& t) {
         if(t.joinable()) {
+            LOG("Interrupting inner");
             t.interrupt();
 
+#if INTERRUPT_TYPE == INTERRUPT_TYPE_NON_INTERRUPT
             boost::this_thread::disable_interruption di;
             t.join();
-
-            // try { t.join(); } catch(boost::thread_interrupted&) {}
+#else
+            try { t.join(); } catch(boost::thread_interrupted&) {}
+#endif
         }
     }
 };
 
 template<class T>
-struct scopeguard {
+struct scope_guard {
     T _callable;
-    scopeguard( T callable ) : _callable( callable ) {}
-    ~scopeguard() { _callable(); }
+    scope_guard( T callable ) : _callable( callable ) {}
+    ~scope_guard() { _callable(); }
 };
 
 void double_interrupt() {
     boost::thread outer([] {
+#if INTERRUPT_TYPE == INTERRUPT_TYPE_SCOPED_THREAD
         boost::scoped_thread<boost::interrupt_and_join_if_joinable> inner([] {
+#else
+        boost::thread inner([] {
+#endif
             while(true) {
                 boost::this_thread::interruption_point();
                 work();
             }
         });
         {
-            // boost::thread_guard<boost::interrupt_and_join_if_joinable> guard(inner);
-//            scopeguard g([&] {
-//                inner.interrupt();
-//                inner.join();
-//            });
+#if INTERRUPT_TYPE == INTERRUPT_TYPE_NON_INTERRUPT || INTERRUPT_TYPE == INTERRUPT_TYPE_CATCH
+            boost::thread_guard<non_interruptable_interrupt_and_join_if_joinable> guard(inner);
+#elif INTERRUPT_TYPE == INTERRUPT_TYPE_THREAD_GUARD
+            boost::thread_guard<boost::interrupt_and_join_if_joinable> guard(inner);
+#elif INTERRUPT_TYPE == INTERRUPT_TYPE_SCOPE_GUARD
+            scope_guard g([&] {
+                LOG("Interrupting inner");
+                inner.interrupt();
+                inner.join();
+            });
+#elif INTERRUPT_TYPE == INTERRUPT_TYPE_MANUAL
             LOG("Interrupting inner");
-            // inner.interrupt();
-            // inner.join();
+            inner.interrupt();
+            inner.join();
+#endif
         }
     });
     LOG("Interrupting outer");
