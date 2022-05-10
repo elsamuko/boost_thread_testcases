@@ -26,7 +26,6 @@ struct non_interruptable_interrupt_and_join_if_joinable {
     template <class Thread>
     void operator()(Thread& t) {
         if(t.joinable()) {
-            LOG("Interrupting inner");
             t.interrupt();
 
 #if INTERRUPT_TYPE == INTERRUPT_TYPE_NON_INTERRUPT
@@ -50,6 +49,8 @@ void double_interrupt() {
     boost::thread outer([] {
 #if INTERRUPT_TYPE == INTERRUPT_TYPE_SCOPED_THREAD
         boost::scoped_thread<boost::interrupt_and_join_if_joinable> inner([] {
+#elif INTERRUPT_TYPE == INTERRUPT_TYPE_SCOPED_THREAD_NI
+        boost::scoped_thread<boost::non_interruptable_interrupt_and_join_if_joinable> inner([] {
 #else
         boost::thread inner([] {
 #endif
@@ -63,9 +64,10 @@ void double_interrupt() {
             boost::thread_guard<non_interruptable_interrupt_and_join_if_joinable> guard(inner);
 #elif INTERRUPT_TYPE == INTERRUPT_TYPE_THREAD_GUARD
             boost::thread_guard<boost::interrupt_and_join_if_joinable> guard(inner);
+#elif INTERRUPT_TYPE == INTERRUPT_TYPE_THREAD_GUARD_NI
+            boost::thread_guard<boost::non_interruptable_interrupt_and_join_if_joinable> guard(inner);
 #elif INTERRUPT_TYPE == INTERRUPT_TYPE_SCOPE_GUARD
             scope_guard g([&] {
-                LOG("Interrupting inner");
                 inner.interrupt();
                 inner.join();
             });
@@ -74,6 +76,7 @@ void double_interrupt() {
             inner.interrupt();
             inner.join();
 #endif
+            LOG("Interrupting inner");
         }
     });
     LOG("Interrupting outer");

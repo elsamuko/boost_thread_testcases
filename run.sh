@@ -42,7 +42,9 @@ function build_and_run {
 }
 
 build_and_run "boost::scoped_thread<boost::interrupt_and_join_if_joinable>" "with_scoped_thread"
+build_and_run "boost::scoped_thread<boost::non_interruptable_interrupt_and_join_if_joinable>" "with_scoped_thread_ni"
 build_and_run "boost::thread_guard<boost::interrupt_and_join_if_joinable>" "with_thread_guard"
+build_and_run "boost::thread_guard<boost::non_interruptable_interrupt_and_join_if_joinable>" "with_thread_guard_ni"
 build_and_run "~scope_guard()" "with_scope_guard"
 build_and_run "boost::this_thread::disable_interruption" "with_non_interrupt"
 build_and_run "catch(boost::thread_interrupted&)" "with_catch"
