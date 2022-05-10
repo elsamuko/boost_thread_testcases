@@ -5,18 +5,38 @@
 With boost::scoped_thread<boost::interrupt_and_join_if_joinable>
 Start
 Interrupting outer
+Interrupting inner
 terminate called after throwing an instance of 'boost::thread_interrupted'
-./run.sh: line 28: 31958 Aborted                 (core dumped) ./bin/release/double_interrupt
+./run.sh: line 28: 46156 Aborted                 (core dumped) ./bin/release/double_interrupt
 Crash
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+With boost::scoped_thread<boost::non_interruptable_interrupt_and_join_if_joinable>
+Start
+Interrupting outer
+Interrupting inner
+End
+No crash
 -----------------------------------------------------------------
 
 -----------------------------------------------------------------
 With boost::thread_guard<boost::interrupt_and_join_if_joinable>
 Start
 Interrupting outer
+Interrupting inner
 terminate called after throwing an instance of 'boost::thread_interrupted'
-./run.sh: line 28: 31984 Aborted                 (core dumped) ./bin/release/double_interrupt
+./run.sh: line 28: 46210 Aborted                 (core dumped) ./bin/release/double_interrupt
 Crash
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+With boost::thread_guard<boost::non_interruptable_interrupt_and_join_if_joinable>
+Start
+Interrupting outer
+Interrupting inner
+End
+No crash
 -----------------------------------------------------------------
 
 -----------------------------------------------------------------
@@ -25,7 +45,7 @@ Start
 Interrupting outer
 Interrupting inner
 terminate called after throwing an instance of 'boost::thread_interrupted'
-./run.sh: line 28: 32010 Aborted                 (core dumped) ./bin/release/double_interrupt
+./run.sh: line 28: 46264 Aborted                 (core dumped) ./bin/release/double_interrupt
 Crash
 -----------------------------------------------------------------
 
